@@ -8,7 +8,15 @@ if nb_args <> 3 then
        (1 <= line_num <= `cat filename | wc -l`)\n";
     exit 1
   end;
-let i = int_of_string Sys.argv.(1) in
+let nums_str = Sys.argv.(1) in
+let istr, jstr =
+  if BatString.contains nums_str '-' then
+    BatString.split nums_str ~by:"-"
+  else
+    (nums_str, nums_str)
+in
+let i = int_of_string istr in
+let j = int_of_string jstr in
 if i <= 0 then
   begin
     Printf.eprintf "get_line: error: %d <= 0\n" i;
@@ -21,16 +29,23 @@ try
   while true do
     let line = input_line input in
     incr nb_lines;
-    if !nb_lines = i then
+    if !nb_lines >= i && !nb_lines <= j then
+      Printf.printf "%s\n" line
+    ;
+    if !nb_lines > j then
       begin
-        Printf.printf "%s\n" line;
         close_in input;
-        exit 0 (* normal termination *)
+        exit 0 (* normal *)
       end
-  done;
+  done
 with _ ->
   begin
     close_in input;
-    Printf.eprintf "get_line: error: %d > %d\n" i !nb_lines;
-    exit 1
+    if i > !nb_lines then
+      Printf.eprintf "get_line: error: i: %d > %d\n" i !nb_lines
+    ;
+    if j > !nb_lines && j <> i then
+      Printf.eprintf "get_line: error: j: %d > %d\n" j !nb_lines
+    ;
+    exit 1 (* abnormal *)
   end
