@@ -4,8 +4,8 @@ let nb_args = Array.length Sys.argv in
 if nb_args <> 3 then
   begin
     Printf.eprintf
-      "get_line: error: usage: get_line line_num filename \
-       (1 <= line_num <= `cat filename | wc -l`)\n";
+      "get_line: error: usage: get_line i[-j] filename \
+       (1 <= i [<= j] <= `cat filename | wc -l`)\n";
     exit 1
   end;
 let nums_str = Sys.argv.(1) in
@@ -17,6 +17,11 @@ let istr, jstr =
 in
 let i = int_of_string istr in
 let j = int_of_string jstr in
+if j < i then
+  begin
+    Printf.eprintf "get_line: error: j < i\n";
+    exit 1
+  end;
 if i <= 0 then
   begin
     Printf.eprintf "get_line: error: %d <= 0\n" i;
