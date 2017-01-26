@@ -8,5 +8,5 @@ obuild-ver: 1
 Executable get_line
   oflags:       -bin-annot -keep-locs
   Path:         .
-#  BuildDepends: batteries, dolog
+  BuildDepends: batteries
   MainIs:       get_line.ml
