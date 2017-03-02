@@ -1,63 +1,69 @@
+open Printf
 
 let randomize_list l =
   Core_kernel.Core_random.self_init ();
   Core.Std.List.permute l
 
+type mode = Head of int
+          | Tail of int
+          | Just_one of int
+          | Between of int * int
+
+let is_substring super sub =
+  try let _index = BatString.find super sub in true
+  with Not_found -> false
+
+let classify s =
+  if BatString.starts_with s "+" then
+    let n = int_of_string (BatString.lchop s) in
+    Head n
+  else if BatString.starts_with s "-" then
+    let n = int_of_string (BatString.lchop s) in
+    Tail n
+  else if is_substring s ".." then
+    let start_i, stop_i = BatString.split ~by:".." s in
+    Between (int_of_string start_i, int_of_string stop_i)
+  else
+    Just_one (int_of_string s)
+
 let main () =
   let nb_args = Array.length Sys.argv in
+  if nb_args < 3 then
+    (Printf.eprintf
+       "get_line: error: usage:\nget_line {+n|-n|i|i..j} FILENAME [--rand] \
+        (1 <= i [<= j] <= N (N = nb. lines in file)\n";
+     exit 1);
   let options = Array.to_list Sys.argv in
-  if nb_args <> 3 then
-    begin
-      Printf.eprintf
-        "get_line: error: usage: get_line i[-j] filename \
-         (1 <= i [<= j] <= `cat filename | wc -l`)\n";
-      exit 1
-    end;
+  let randomize = List.mem "--rand" options in
   let nums_str = Sys.argv.(1) in
-  let istr, jstr =
-    if BatString.contains nums_str '-' then
-      BatString.split nums_str ~by:"-"
-    else
-      (nums_str, nums_str)
-  in
-  let i = int_of_string istr in
-  let j = int_of_string jstr in
-  if j < i then
-    begin
-      Printf.eprintf "get_line: error: j < i\n";
-      exit 1
-    end;
-  if i <= 0 then
-    begin
-      Printf.eprintf "get_line: error: %d <= 0\n" i;
-      exit 1
-    end;
-  let filename = Sys.argv.(2) in
-  let input = open_in filename in
-  let nb_lines = ref 0 in
-  try
-    while true do
-      let line = input_line input in
-      incr nb_lines;
-      if !nb_lines >= i && !nb_lines <= j then
-        Printf.printf "%s\n" line
-      ;
-        if !nb_lines > j then
-          begin
-            close_in input;
-            exit 0 (* normal *)
-          end
-    done
-  with _ ->
-    begin
-      close_in input;
-      if i > !nb_lines then
-        Printf.eprintf "get_line: error: i: %d > %d\n" i !nb_lines
-      ;
-        if j > !nb_lines && j <> i then
-          Printf.eprintf "get_line: error: j: %d > %d\n" j !nb_lines
-      ;
-        exit 1 (* abnormal *)
-    end
+  let input_fn = Sys.argv.(2) in
+  let all_lines = BatList.of_enum (BatFile.lines_of input_fn) in
+  let nb_lines = List.length all_lines in
+  let selected_lines =
+    match classify nums_str with
+    | Head n ->
+       if n > nb_lines then
+         (eprintf "get_line: %d > %d\n" n nb_lines;
+          exit 1);
+       BatList.take n all_lines
+    | Tail n ->
+       if n > nb_lines then
+         (eprintf "get_line: %d > %d\n" n nb_lines;
+          exit 1);
+       BatList.drop (nb_lines - n) all_lines
+    | Just_one i ->
+       if i < 1 || i > nb_lines then
+         (eprintf "get_line: %d < 1 || %d > %d\n" i i nb_lines;
+          exit 1);
+       BatList.take 1 (BatList.drop (i - 1) all_lines)
+    | Between (i, j) ->
+       if i < 1 || j < i || j > nb_lines then
+         (eprintf "get_line: %d < 1 || %d < %d || %d > %d\n" i j i j nb_lines;
+          exit 1);
+       BatList.take ((j - i) + 1) (BatList.drop (i - 1) all_lines) in
+  let to_output =
+    if randomize then randomize_list selected_lines
+    else selected_lines in
+  List.iter (printf "%s\n") to_output
 
 let () = main ()
