@@ -30,11 +30,12 @@ let main () =
   let nb_args = Array.length Sys.argv in
   if nb_args < 3 then
     (Printf.eprintf
-       "get_line: error: usage:\nget_line {+n|-n|i|i..j} FILENAME [--rand] \
-        (1 <= i [<= j] <= N (N = nb. lines in file)\n";
+       "get_line: error: usage:\nget_line {+n|-n|i|i..j} FILE [--rand] [-v] \
+        (1 <= i [<= j] <= N; N = nb. lines in FILE)\n";
      exit 1);
   let options = Array.to_list Sys.argv in
   let randomize = List.mem "--rand" options in
+  let invert = List.mem "-v" options in (* like 'grep -v' *)
   let nums_str = Sys.argv.(1) in
   let input_fn = Sys.argv.(2) in
   let all_lines = BatList.of_enum (BatFile.lines_of input_fn) in
@@ -42,25 +43,35 @@ let main () =
   let selected_lines =
     match classify nums_str with
     | Head n ->
-       if n > nb_lines then
-         (eprintf "get_line: %d > %d\n" n nb_lines;
-          exit 1);
-       BatList.take n all_lines
+      if n > nb_lines then
+        (eprintf "get_line: %d > %d\n" n nb_lines;
+         exit 1);
+      (if invert then BatList.drop else BatList.take)
+        n all_lines
     | Tail n ->
-       if n > nb_lines then
-         (eprintf "get_line: %d > %d\n" n nb_lines;
-          exit 1);
-       BatList.drop (nb_lines - n) all_lines
+      if n > nb_lines then
+        (eprintf "get_line: %d > %d\n" n nb_lines;
+         exit 1);
+      (if invert then BatList.take else BatList.drop)
+        (nb_lines - n) all_lines
     | Just_one i ->
-       if i < 1 || i > nb_lines then
-         (eprintf "get_line: %d < 1 || %d > %d\n" i i nb_lines;
-          exit 1);
-       BatList.take 1 (BatList.drop (i - 1) all_lines)
+      if i < 1 || i > nb_lines then
+        (eprintf "get_line: %d < 1 || %d > %d\n" i i nb_lines;
+         exit 1);
+      if invert then
+        let xs, rest = BatList.takedrop (i - 1) all_lines in
+        BatList.append xs (BatList.drop 1 rest)
+      else
+        BatList.take 1 (BatList.drop (i - 1) all_lines)
     | Between (i, j) ->
-       if i < 1 || j < i || j > nb_lines then
-         (eprintf "get_line: %d < 1 || %d < %d || %d > %d\n" i j i j nb_lines;
-          exit 1);
-       BatList.take ((j - i) + 1) (BatList.drop (i - 1) all_lines) in
+      if i < 1 || j < i || j > nb_lines then
+        (eprintf "get_line: %d < 1 || %d < %d || %d > %d\n" i j i j nb_lines;
+         exit 1);
+      if invert then
+        let xs, rest = BatList.takedrop (i - 1) all_lines in
+        BatList.append xs (BatList.drop ((j - i) + 1) rest)
+      else
+        BatList.take ((j - i) + 1) (BatList.drop (i - 1) all_lines) in
   let to_output =
     if randomize then randomize_list selected_lines
     else selected_lines in
