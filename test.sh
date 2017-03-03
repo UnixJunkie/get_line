@@ -9,11 +9,19 @@ set -x
 ./get_line 1 $tmp
 ./get_line 2 $tmp
 ./get_line 3 $tmp
-./get_line 2-5 $tmp
+./get_line 2..5 $tmp
 ./get_line 0 $tmp
 ./get_line 11 $tmp
-./get_line 10-12 $tmp
-./get_line 12-15 $tmp
+./get_line 10..12 $tmp
+./get_line 12..15 $tmp
+
+./get_line 1 $tmp -v
+./get_line 2 $tmp -v
+./get_line 3 $tmp -v
+./get_line 2..5 $tmp -v
+
+./get_line +3 $tmp
+./get_line -3 $tmp
 
 set +x
 
