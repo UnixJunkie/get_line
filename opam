@@ -16,5 +16,6 @@ remove: ["rm" "-f" "%{bin}%/get_line"]
 depends: [
   "obuild" {build}
   "core"
+  "core_kernel"
   "batteries"
 ]
