@@ -15,7 +15,5 @@ install: ["cp" "dist/build/get_line/get_line" bin]
 remove: ["rm" "-f" "%{bin}%/get_line"]
 depends: [
   "obuild" {build}
-  "core"
-  "core_kernel"
-  "batteries"
+  "batteries" {>= "2.6.0"}
 ]

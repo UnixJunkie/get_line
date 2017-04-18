@@ -1,8 +1,7 @@
 open Printf
 
 let randomize_list l =
-  Core_kernel.Core_random.self_init ();
-  Core.Std.List.permute l
+  BatList.shuffle ~state:(BatRandom.State.make_self_init ()) l
 
 type mode = Head of int
           | Tail of int

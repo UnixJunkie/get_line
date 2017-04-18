@@ -7,5 +7,5 @@ obuild-ver: 1
 
 Executable get_line
   Path:         .
-  BuildDepends: batteries, core
+  BuildDepends: batteries
   MainIs:       get_line.ml
