@@ -56,7 +56,7 @@ let main () =
      "-i", Arg.Set_string input_fn_opt,
      "<filename> where to read lines from (default=stdin)";
      "--range", Arg.Set_string range_opt,
-     "{+n|-n|i|i..j}: line selection policy; \
+     "{+n|-n|i|i..j|i,j[,...]}: line selection policy; \
       (+n => top n lines; \
       -n => last n lines; \
       n => only line n; \
