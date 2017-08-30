@@ -26,17 +26,37 @@ let classify s =
     Just_one (int_of_string s)
 
 let main () =
-  let nb_args = Array.length Sys.argv in
-  if nb_args < 3 then
-    (Printf.eprintf
-       "get_line: error: usage:\nget_line {+n|-n|i|i..j} FILE [--rand] [-v] \
-        (1 <= i [<= j] <= N; N = nb. lines in FILE)\n";
-     exit 1);
-  let options = Array.to_list Sys.argv in
-  let randomize = List.mem "--rand" options in
-  let invert = List.mem "-v" options in (* like 'grep -v' *)
-  let nums_str = Sys.argv.(1) in
-  let input_fn = Sys.argv.(2) in
+  let usage_message =
+    sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j} [-i FILE] [--rand] [-v] \
+             (1 <= i [<= j] <= N; N = nb. lines in FILE)\n"
+      Sys.argv.(0) in
+  let argc = Array.length Sys.argv in
+  if argc = 1 then
+    (eprintf "%s" usage_message; exit 1);
+  let rand_opt = ref false in
+  let invert_opt = ref false in
+  let range_opt = ref "" in
+  let input_fn_opt = ref "/dev/stdin" in
+  Arg.parse
+    ["-v", Arg.Set invert_opt,
+     "invert the selection of lines (like 'grep -v')";
+     "--rand", Arg.Set rand_opt,
+     "randomize selected lines before writing them out";
+     "-i", Arg.Set_string input_fn_opt,
+     "<filename> where to read lines from (default=stdin)";
+     "--range", Arg.Set_string range_opt,
+     "{+n|-n|i|i..j}: line selection policy; \
+      (+n => top n lines; \
+      -n => last n lines; \
+      n => only line n; \
+      i..j => lines i to j";
+     "-r", Arg.Set_string range_opt, "alias for --range"]
+    (fun arg -> raise (Arg.Bad ("Bad argument: " ^ arg)))
+    usage_message;
+  let randomize = !rand_opt in
+  let invert = !invert_opt in
+  let nums_str = !range_opt in
+  let input_fn = !input_fn_opt in
   let all_lines = BatList.of_enum (BatFile.lines_of input_fn) in
   let nb_lines = List.length all_lines in
   let selected_lines =

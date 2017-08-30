@@ -6,22 +6,24 @@ seq 1 10 > $tmp
 
 set -x
 
-./get_line 1 $tmp
-./get_line 2 $tmp
-./get_line 3 $tmp
-./get_line 2..5 $tmp
-./get_line 0 $tmp
-./get_line 11 $tmp
-./get_line 10..12 $tmp
-./get_line 12..15 $tmp
+./get_line -r 1 -i $tmp
+./get_line -r 2 -i $tmp
+./get_line -r 3 -i $tmp
+./get_line -r 2..5 -i $tmp
+./get_line -r 0 -i $tmp
+./get_line -r 11 -i $tmp
+./get_line -r 10..12 -i $tmp
+./get_line -r 12..15 -i $tmp
 
-./get_line 1 $tmp -v
-./get_line 2 $tmp -v
-./get_line 3 $tmp -v
-./get_line 2..5 $tmp -v
+./get_line -r 1 -i $tmp -v
+./get_line -r 2 -i $tmp -v
+./get_line -r 3 -i $tmp -v
+./get_line -r 2..5 -i $tmp -v
 
-./get_line +3 $tmp
-./get_line -3 $tmp
+./get_line -r +3 -i $tmp
+./get_line -r -3 -i $tmp
+
+./get_line -r +10 -i $tmp --rand
 
 set +x
 
