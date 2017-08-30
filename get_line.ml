@@ -1,33 +1,44 @@
 open Printf
 
+module L = BatList
+module Ht = Hashtbl
+module String = BatString
+
 let randomize_list l =
-  BatList.shuffle ~state:(BatRandom.State.make_self_init ()) l
+  L.shuffle ~state:(BatRandom.State.make_self_init ()) l
 
 type mode = Head of int
           | Tail of int
           | Just_one of int
           | Between of int * int
+          | Several of (int, unit) Ht.t
 
 let is_substring super sub =
-  try let _index = BatString.find super sub in true
+  try let _index = String.find super sub in true
   with Not_found -> false
 
 let classify s =
-  if BatString.starts_with s "+" then
-    let n = int_of_string (BatString.lchop s) in
+  if String.starts_with s "+" then
+    let n = int_of_string (String.lchop s) in
     Head n
-  else if BatString.starts_with s "-" then
-    let n = int_of_string (BatString.lchop s) in
+  else if String.starts_with s "-" then
+    let n = int_of_string (String.lchop s) in
     Tail n
   else if is_substring s ".." then
-    let start_i, stop_i = BatString.split ~by:".." s in
+    let start_i, stop_i = String.split ~by:".." s in
     Between (int_of_string start_i, int_of_string stop_i)
+  else if String.contains s ',' then
+    let strings = String.split_on_char ',' s in
+    let line_nums = L.map int_of_string strings in
+    let ht = Ht.create 11 in
+    L.iter (fun i -> Ht.add ht i ()) line_nums;
+    Several ht
   else
     Just_one (int_of_string s)
 
 let main () =
   let usage_message =
-    sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j} [-i FILE] [--rand] [-v] \
+    sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j|i,j[,...]} [-i FILE] [--rand] [-v] \
              (1 <= i [<= j] <= N; N = nb. lines in FILE)\n"
       Sys.argv.(0) in
   let argc = Array.length Sys.argv in
@@ -49,7 +60,8 @@ let main () =
       (+n => top n lines; \
       -n => last n lines; \
       n => only line n; \
-      i..j => lines i to j";
+      i..j => lines i to j; \
+      i,j[,...] => only lines i,j,...";
      "-r", Arg.Set_string range_opt, "alias for --range"]
     (fun arg -> raise (Arg.Bad ("Bad argument: " ^ arg)))
     usage_message;
@@ -57,43 +69,51 @@ let main () =
   let invert = !invert_opt in
   let nums_str = !range_opt in
   let input_fn = !input_fn_opt in
-  let all_lines = BatList.of_enum (BatFile.lines_of input_fn) in
-  let nb_lines = List.length all_lines in
+  let all_lines = L.of_enum (BatFile.lines_of input_fn) in
+  let nb_lines = L.length all_lines in
   let selected_lines =
     match classify nums_str with
     | Head n ->
       if n > nb_lines then
         (eprintf "get_line: %d > %d\n" n nb_lines;
          exit 1);
-      (if invert then BatList.drop else BatList.take)
+      (if invert then L.drop else L.take)
         n all_lines
     | Tail n ->
       if n > nb_lines then
         (eprintf "get_line: %d > %d\n" n nb_lines;
          exit 1);
-      (if invert then BatList.take else BatList.drop)
+      (if invert then L.take else L.drop)
         (nb_lines - n) all_lines
     | Just_one i ->
       if i < 1 || i > nb_lines then
         (eprintf "get_line: %d < 1 || %d > %d\n" i i nb_lines;
          exit 1);
       if invert then
-        let xs, rest = BatList.takedrop (i - 1) all_lines in
-        BatList.append xs (BatList.drop 1 rest)
+        let xs, rest = L.takedrop (i - 1) all_lines in
+        L.append xs (L.drop 1 rest)
       else
-        BatList.take 1 (BatList.drop (i - 1) all_lines)
+        L.take 1 (L.drop (i - 1) all_lines)
     | Between (i, j) ->
       if i < 1 || j < i || j > nb_lines then
         (eprintf "get_line: %d < 1 || %d < %d || %d > %d\n" i j i j nb_lines;
          exit 1);
       if invert then
-        let xs, rest = BatList.takedrop (i - 1) all_lines in
-        BatList.append xs (BatList.drop ((j - i) + 1) rest)
+        let xs, rest = L.takedrop (i - 1) all_lines in
+        L.append xs (L.drop ((j - i) + 1) rest)
       else
-        BatList.take ((j - i) + 1) (BatList.drop (i - 1) all_lines) in
+        L.take ((j - i) + 1) (L.drop (i - 1) all_lines)
+    | Several ht ->
+      let rev_res = ref [] in
+      L.iteri (fun j line ->
+          let i = j + 1 in
+          if Ht.mem ht i then
+            rev_res := line :: !rev_res
+        ) all_lines;
+      L.rev !rev_res in
   let to_output =
     if randomize then randomize_list selected_lines
     else selected_lines in
-  List.iter (printf "%s\n") to_output
+  L.iter (printf "%s\n") to_output
 
 let () = main ()

@@ -25,6 +25,8 @@ set -x
 
 ./get_line -r +10 -i $tmp --rand
 
+./get_line -r 1,5,10 -i $tmp
+
 set +x
 
 rm -f $tmp
