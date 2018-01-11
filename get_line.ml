@@ -7,6 +7,12 @@ module String = BatString
 let randomize_list l =
   L.shuffle ~state:(BatRandom.State.make_self_init ()) l
 
+let with_out_file (fn: string) (f: out_channel -> 'a): 'a =
+  let out = open_out_bin fn in
+  let res = f out in
+  close_out out;
+  res
+
 type mode = Head of int
           | Tail of int
           | Just_one of int
@@ -48,6 +54,7 @@ let main () =
   let invert_opt = ref false in
   let range_opt = ref "" in
   let input_fn_opt = ref "/dev/stdin" in
+  let output_fn_opt = ref "/dev/stdout" in
   Arg.parse
     ["-v", Arg.Set invert_opt,
      "invert the selection of lines (like 'grep -v')";
@@ -55,6 +62,8 @@ let main () =
      "randomize selected lines before writing them out";
      "-i", Arg.Set_string input_fn_opt,
      "<filename> where to read lines from (default=stdin)";
+     "-o", Arg.Set_string output_fn_opt,
+     "<filename> where to write lines to (default=stdout)";
      "--range", Arg.Set_string range_opt,
      "{+n|-n|i|i..j|i,j[,...]}: line selection policy; \
       (+n => top n lines; \
@@ -114,6 +123,8 @@ let main () =
   let to_output =
     if randomize then randomize_list selected_lines
     else selected_lines in
-  L.iter (printf "%s\n") to_output
+  with_out_file !output_fn_opt (fun out ->
+      L.iter (fprintf out "%s\n") to_output
+    )
 
 let () = main ()
