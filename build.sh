@@ -1,4 +1,4 @@
 #!/bin/bash
 
-obuild configure
-obuild build
+jbuilder build @install
+jbuilder install
