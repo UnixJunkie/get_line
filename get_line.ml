@@ -54,7 +54,7 @@ let main () =
   let invert_opt = ref false in
   let range_opt = ref "" in
   let input_fn_opt = ref "/dev/stdin" in
-  let output_fn_opt = ref "/dev/stdout" in
+  let (output_fn_opt: string option ref) = ref None in
   Arg.parse
     ["-v", Arg.Set invert_opt,
      "invert the selection of lines (like 'grep -v')";
@@ -62,7 +62,7 @@ let main () =
      "randomize selected lines before writing them out";
      "-i", Arg.Set_string input_fn_opt,
      "<filename> where to read lines from (default=stdin)";
-     "-o", Arg.Set_string output_fn_opt,
+     "-o", Arg.String (fun fn -> output_fn_opt := Some fn),
      "<filename> where to write lines to (default=stdout)";
      "--range", Arg.Set_string range_opt,
      "{+n|-n|i|i..j|i,j[,...]}: line selection policy; \
@@ -123,8 +123,14 @@ let main () =
   let to_output =
     if randomize then randomize_list selected_lines
     else selected_lines in
-  with_out_file !output_fn_opt (fun out ->
-      L.iter (fprintf out "%s\n") to_output
-    )
+  (* there was a bug: if we open /dev/stdout, the file 'fn'
+     is truncated in case stdout was redirected to 'fn'
+     from the command line. *)
+  match !output_fn_opt with
+  | None -> L.iter (printf "%s\n") to_output (* bug correction *)
+  | Some fn ->
+    with_out_file fn (fun out ->
+        L.iter (fprintf out "%s\n") to_output
+      )
 
 let () = main ()
