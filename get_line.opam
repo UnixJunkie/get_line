@@ -13,7 +13,7 @@ depends: [
 synopsis:
   "Robustly select lines from file; can replace the head and tail shell commands and do even more"
 description: """usage:
-get_line {--range|-r} {+n|-n|i|i..j|i-j|i,j[,...]} [-i FILE] [--rand] [-v] (1 <= i [<= j] <= N; N = nb. lines in FILE)
+get_line {--range|-r} {+n|-n|i|i..j|i:j|i,j[,...]} [-i FILE] [--rand] [-v] (1 <= i [<= j] <= N; N = nb. lines in FILE)
 
   -v invert the selection of lines (like 'grep -v')
   --rand randomize selected lines before writing them out
@@ -24,6 +24,6 @@ get_line {--range|-r} {+n|-n|i|i..j|i-j|i,j[,...]} [-i FILE] [--rand] [-v] (1 <=
                 -n => last n lines;
                 n => only line n;
                 i..j => lines i to j;
-                i-j => top i lines and last j lines;
+                i:j => top i lines and last j lines;
                 i,j[,...] => only lines i,j,...
   {-help|--help} Display this list of options"""

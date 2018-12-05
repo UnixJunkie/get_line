@@ -15,6 +15,7 @@ let with_out_file (fn: string) (f: out_channel -> 'a): 'a =
 
 type mode = Head of int
           | Tail of int
+          | Head_tail of int * int
           | Just_one of int
           | Between of int * int
           | Several of (int, unit) Ht.t
@@ -30,6 +31,9 @@ let classify s =
   else if String.starts_with s "-" then
     let n = int_of_string (String.lchop s) in
     Tail n
+  else if is_substring s ":" then
+    let head, tail = String.split ~by:":" s in
+    Head_tail (int_of_string head, int_of_string tail)
   else if is_substring s ".." then
     let start_i, stop_i = String.split ~by:".." s in
     Between (int_of_string start_i, int_of_string stop_i)
@@ -44,8 +48,8 @@ let classify s =
 
 let main () =
   let usage_message =
-    sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j|i,j[,...]} [-i FILE] [--rand] [-v] \
-             (1 <= i [<= j] <= N; N = nb. lines in FILE)\n"
+    sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j|i:j|i,j[,...]} [-i FILE] \
+             [--rand] [-v] (1 <= i [<= j] <= N; N = nb. lines in FILE)\n"
       Sys.argv.(0) in
   let argc = Array.length Sys.argv in
   if argc = 1 then
@@ -70,6 +74,7 @@ let main () =
       -n => last n lines; \
       n => only line n; \
       i..j => lines i to j; \
+      i:j => top i lines and last j lines; \
       i,j[,...] => only lines i,j,...";
      "-r", Arg.Set_string range_opt, "alias for --range"]
     (fun arg -> raise (Arg.Bad ("Bad argument: " ^ arg)))
@@ -94,6 +99,18 @@ let main () =
          exit 1);
       (if invert then L.take else L.drop)
         (nb_lines - n) all_lines
+    | Head_tail (h, t) ->
+      (* whole file: head|body|tail *)
+      let total = h + t in
+      if total > nb_lines then
+        (eprintf "get_line: %d + %d > %d\n" h t nb_lines;
+         exit 1);
+      let head, rest = L.takedrop h all_lines in
+      let body, tail = L.takedrop (nb_lines - total) rest in
+      if invert then (* inverted case *)
+        body
+      else (* standard case *)
+        L.append head tail
     | Just_one i ->
       if i < 1 || i > nb_lines then
         (eprintf "get_line: %d < 1 || %d > %d\n" i i nb_lines;

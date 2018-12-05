@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#set -x # DEBUG
+
 tmp=`mktemp`
 
 seq 1 10 > $tmp
@@ -38,6 +40,9 @@ diff <(./get_line -r -3 -i $tmp) <(seq 8 10)
 
 # lines 1,5 and 10
 diff <(./get_line -r 1,5,10 -i $tmp) <(printf "1\n5\n10\n")
+
+# lines 1,2 and 8,9,10
+diff <(./get_line -r 2:3 -i $tmp) <(printf "1\n2\n8\n9\n10\n")
 
 set -x
 
