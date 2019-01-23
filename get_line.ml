@@ -74,6 +74,24 @@ let list_cv_folds n l =
       loop acc' prev' xs in
   loop [] [] test_sets
 
+let cv_folds n l =
+  let train_tests = list_cv_folds n l in
+  L.iteri (fun i (train, test) ->
+      let tmp_fn1 =
+        let prfx1 = sprintf "train_%02d_" i in
+        Filename.temp_file prfx1 "" in
+      with_out_file tmp_fn1 (fun out ->
+          L.iter (fprintf out "%s\n") train
+        );
+      let tmp_fn2 =
+        let prfx2 = sprintf "test_%02d_" i in
+        Filename.temp_file prfx2 "" in
+      with_out_file tmp_fn2 (fun out ->
+          L.iter (fprintf out "%s\n") test
+        );
+      printf "%s %s\n" tmp_fn1 tmp_fn2
+    ) train_tests
+
 let main () =
   let usage_message =
     sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j|i:j|i,j[,...]} [-i FILE] \
@@ -117,6 +135,11 @@ let main () =
   let nums_str = !range_opt in
   let input_fn = !input_fn_opt in
   let all_lines = L.of_enum (BatFile.lines_of input_fn) in
+  if !nxcv > 1 then
+    begin
+      cv_folds !nxcv all_lines;
+      exit 0
+    end;
   let nb_lines = L.length all_lines in
   let selected_lines =
     match classify nums_str with
