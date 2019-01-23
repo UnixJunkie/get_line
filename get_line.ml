@@ -113,7 +113,7 @@ let main () =
      "randomize selected lines before writing them out";
      "--NxCV", Arg.Set_int nxcv,
      "<int> several folds cross validation: cut input file into N \
-      random partitions then create N traininig files and N test files \
+      partitions then create N traininig files and N test files \
       (all other get_line options will be ignored)";
      "-i", Arg.Set_string input_fn_opt,
      "<filename> where to read lines from (default=stdin)";
