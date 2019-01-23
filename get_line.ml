@@ -76,19 +76,19 @@ let list_cv_folds n l =
 
 let cv_folds n l =
   let train_tests = list_cv_folds n l in
+  let dump_out fn l =
+    with_out_file fn (fun out ->
+        L.iter (fprintf out "%s\n") l
+      ) in
   L.iteri (fun i (train, test) ->
       let tmp_fn1 =
         let prfx1 = sprintf "train_%02d_" i in
         Filename.temp_file prfx1 "" in
-      with_out_file tmp_fn1 (fun out ->
-          L.iter (fprintf out "%s\n") train
-        );
+      dump_out tmp_fn1 train;
       let tmp_fn2 =
         let prfx2 = sprintf "test_%02d_" i in
         Filename.temp_file prfx2 "" in
-      with_out_file tmp_fn2 (fun out ->
-          L.iter (fprintf out "%s\n") test
-        );
+      dump_out tmp_fn2 test;
       printf "%s %s\n" tmp_fn1 tmp_fn2
     ) train_tests
 
