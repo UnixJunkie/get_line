@@ -46,6 +46,34 @@ let classify s =
   else
     Just_one (int_of_string s)
 
+(* split a list into n parts (the last part might have a different number
+   of elements due to rounding) *)
+let list_split n l =
+  let len = L.length l in
+  let res = ref [] in
+  let curr = ref l in
+  let m = BatFloat.round_to_int (float len /. float n) in
+  for _ = 1 to n - 1 do
+    let xs, ys = L.takedrop m !curr in
+    curr := ys;
+    res := xs :: !res
+  done;
+  L.rev (!curr :: !res)
+
+(* create folds of cross validation; each fold consists in (train, test) *)
+let list_cv_folds n l =
+  let test_sets = list_split n l in
+  let rec loop acc prev curr =
+    match curr with
+    | [] -> acc
+    | x :: xs ->
+      let before_after = L.flatten (L.rev_append prev xs) in
+      let prev' = x :: prev in
+      let train_test = (before_after, x) in
+      let acc' = train_test :: acc in
+      loop acc' prev' xs in
+  loop [] [] test_sets
+
 let main () =
   let usage_message =
     sprintf "usage:\n%s {--range|-r} {+n|-n|i|i..j|i:j|i,j[,...]} [-i FILE] \
@@ -56,6 +84,7 @@ let main () =
     (eprintf "%s" usage_message; exit 1);
   let rand_opt = ref false in
   let invert_opt = ref false in
+  let nxcv = ref 1 in
   let range_opt = ref "" in
   let input_fn_opt = ref "/dev/stdin" in
   let (output_fn_opt: string option ref) = ref None in
@@ -64,6 +93,10 @@ let main () =
      "invert the selection of lines (like 'grep -v')";
      "--rand", Arg.Set rand_opt,
      "randomize selected lines before writing them out";
+     "--NxCV", Arg.Set_int nxcv,
+     "several folds cross validation: cut input file into N random partitions \
+      then create N traininig files and N test files \
+      (all other get_line options will be ignored)";
      "-i", Arg.Set_string input_fn_opt,
      "<filename> where to read lines from (default=stdin)";
      "-o", Arg.String (fun fn -> output_fn_opt := Some fn),
