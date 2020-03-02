@@ -1,4 +1,4 @@
 #!/bin/bash
 
-jbuilder build @install
-jbuilder install
+dune build @install
+dune install
